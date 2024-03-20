@@ -1,20 +1,29 @@
-# Use an official Node.js runtime as the base image
-FROM node:12.22.9
+# Use the official Node.js image as the base image
+FROM node:latest AS build
 
 # Set the working directory in the container
-WORKDIR /usr/src/app
+WORKDIR /app
 
-# Copy package.json and package-lock.json to the working directory
-COPY package*.json ./
+# Copy package.json and package-lock.json to the container
+COPY package.json package-lock.json ./
 
 # Install dependencies
 RUN npm install
 
-# Copy the rest of the application
+# Copy the entire project to the container
 COPY . .
 
-# Expose the port the app runs on
-EXPOSE 3000
+# Build the project (Adjust if necessary)
+RUN npm run build
 
-# Command to run the application
-CMD ["npm", "start"]
+# Stage 2 - Production environment
+FROM nginx:stable-alpine
+
+# Copy the build files from the 'build' directory to the Nginx server's default public folder
+COPY --from=build /app/build /usr/share/nginx/html
+
+# Expose port 80 (Adjust if necessary)
+EXPOSE 80
+
+# Start Nginx server
+CMD ["nginx", "-g", "daemon off;"]
